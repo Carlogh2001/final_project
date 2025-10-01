@@ -168,14 +168,6 @@ if hasattr(st.session_state, 'prediccion'):
     with col2:
         st.subheader("📊 Análisis")
         
-        # Calcular ventas por visitante
-        venta_por_visitante = st.session_state.prediccion / st.session_state.afluencia
-        
-        st.metric(
-            label="Venta por Visitante",
-            value=f"${venta_por_visitante:.2f}"
-        )
-        
         # Categorización de la predicción
         if st.session_state.prediccion > 50000:
             categoria = "🟢 Alta"
