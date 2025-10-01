@@ -295,15 +295,4 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Conexión opcional a base de datos
-try:
-    from utils import db_connect
-    engine = db_connect()
-    if engine:
-        st.sidebar.success("🔗 Conectado a base de datos")
-    else:
-        st.sidebar.info("💡 Ejecutándose sin base de datos")
-except ImportError:
-    st.sidebar.info("💡 Ejecutándose sin conexión a base de datos")
-except Exception as e:
-    st.sidebar.warning(f"⚠️ Error de conexión: {str(e)}")
-    
+st.sidebar.info("💡 Aplicación funcionando sin base de datos")
