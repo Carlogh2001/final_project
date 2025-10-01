@@ -1,5 +1,3 @@
-
-
 # your code here
 import streamlit as st
 import pickle
@@ -39,26 +37,24 @@ def load_model():
         st.error(f"Error cargando el modelo: {e}")
         return None, None, None
 
-# Función para crear características
+# Función para crear características (ajustada para coincidir con el entrenamiento)
 def create_features(afluencia, fecha):
     features = {}
     
-    # Características básicas
+    # Características básicas (exactamente como en el entrenamiento)
     features['afluencia'] = afluencia
     features['mes'] = fecha.month
     features['dia_semana'] = fecha.weekday()
-    features['dia_mes'] = fecha.day
     features['trimestre'] = (fecha.month - 1) // 3 + 1
     features['es_fin_semana'] = 1 if fecha.weekday() >= 5 else 0
     features['es_inicio_mes'] = 1 if fecha.day <= 7 else 0
     features['es_fin_mes'] = 1 if fecha.day >= 24 else 0
     
-    # Transformaciones de afluencia
+    # Transformaciones de afluencia (exactamente como en el entrenamiento)
     features['afluencia_log'] = np.log1p(afluencia)
     features['afluencia_sqrt'] = np.sqrt(afluencia)
-    features['afluencia_squared'] = afluencia ** 2
     
-    # Características simuladas (en producción vendrían de datos históricos)
+    # Características simuladas (exactamente como en el entrenamiento)
     features['afluencia_ma_7'] = afluencia * 0.95  # Simulación de media móvil
     features['afluencia_ma_30'] = afluencia * 0.98
     features['afluencia_std_7'] = afluencia * 0.1
@@ -108,26 +104,42 @@ fecha = st.sidebar.date_input(
 # Botón de predicción
 if st.sidebar.button("🚀 Realizar Predicción", type="primary"):
     
-    # Crear características
-    features_dict = create_features(afluencia, fecha)
-    
-    # Convertir a DataFrame
-    features_df = pd.DataFrame([features_dict])
-    
-    # Aplicar escalado
-    features_scaled = scaler.transform(features_df)
-    
-    # Aplicar selección de características
-    features_selected = selector.transform(features_scaled)
-    
-    # Realizar predicción
-    prediccion = model.predict(features_selected)[0]
-    
-    # Almacenar en session_state
-    st.session_state.prediccion = prediccion
-    st.session_state.afluencia = afluencia
-    st.session_state.fecha = fecha
-    st.session_state.features = features_dict
+    try:
+        # Crear características
+        features_dict = create_features(afluencia, fecha)
+        
+        # Lista de características en el orden correcto (según el entrenamiento)
+        feature_columns = [
+            'afluencia', 'mes', 'dia_semana', 'trimestre', 'es_fin_semana',
+            'es_inicio_mes', 'es_fin_mes', 'afluencia_log', 'afluencia_sqrt',
+            'afluencia_ma_7', 'afluencia_ma_30', 'afluencia_std_7',
+            'afluencia_lag_1', 'afluencia_lag_7', 'diferencia_ma_7'
+        ]
+        
+        # Convertir a DataFrame con el orden correcto
+        features_df = pd.DataFrame([features_dict])[feature_columns]
+        
+        # Verificar que todas las columnas estén presentes
+        st.sidebar.write(f"Características generadas: {list(features_df.columns)}")
+        
+        # Aplicar escalado
+        features_scaled = scaler.transform(features_df)
+        
+        # Aplicar selección de características
+        features_selected = selector.transform(features_scaled)
+        
+        # Realizar predicción
+        prediccion = model.predict(features_selected)[0]
+        
+        # Almacenar en session_state
+        st.session_state.prediccion = prediccion
+        st.session_state.afluencia = afluencia
+        st.session_state.fecha = fecha
+        st.session_state.features = features_dict
+        
+    except Exception as e:
+        st.error(f"Error en la predicción: {e}")
+        st.sidebar.error("Error procesando los datos")
 
 # Mostrar resultados si hay predicción
 if hasattr(st.session_state, 'prediccion'):
@@ -245,44 +257,56 @@ st.markdown("---")
 st.subheader("🔄 Análisis de Sensibilidad")
 
 if st.checkbox("Mostrar análisis de sensibilidad"):
-    # Crear rango de afluencias
-    afluencia_base = st.session_state.afluencia if hasattr(st.session_state, 'afluencia') else 15000
-    fecha_base = st.session_state.fecha if hasattr(st.session_state, 'fecha') else datetime.now().date()
-    
-    afluencias = np.arange(5000, 30000, 1000)
-    predicciones = []
-    
-    for afl in afluencias:
-        features_dict = create_features(afl, fecha_base)
-        features_df = pd.DataFrame([features_dict])
-        features_scaled = scaler.transform(features_df)
-        features_selected = selector.transform(features_scaled)
-        pred = model.predict(features_selected)[0]
-        predicciones.append(pred)
-    
-    # Crear DataFrame para el gráfico
-    df_sensibilidad = pd.DataFrame({
-        'Afluencia': afluencias,
-        'Ventas_Predichas': predicciones
-    })
-    
-    # Gráfico de línea
-    fig_sens = px.line(
-        df_sensibilidad, 
-        x='Afluencia', 
-        y='Ventas_Predichas',
-        title='Sensibilidad de Ventas vs Afluencia',
-        labels={'Afluencia': 'Afluencia de Visitantes', 'Ventas_Predichas': 'Ventas Predichas ($)'}
-    )
-    
-    fig_sens.add_vline(
-        x=afluencia_base, 
-        line_dash="dash", 
-        line_color="red",
-        annotation_text=f"Afluencia actual: {afluencia_base:,}"
-    )
-    
-    st.plotly_chart(fig_sens, use_container_width=True)
+    try:
+        # Crear rango de afluencias
+        afluencia_base = st.session_state.afluencia if hasattr(st.session_state, 'afluencia') else 15000
+        fecha_base = st.session_state.fecha if hasattr(st.session_state, 'fecha') else datetime.now().date()
+        
+        afluencias = np.arange(5000, 30000, 1000)
+        predicciones = []
+        
+        # Lista de características en el orden correcto
+        feature_columns = [
+            'afluencia', 'mes', 'dia_semana', 'trimestre', 'es_fin_semana',
+            'es_inicio_mes', 'es_fin_mes', 'afluencia_log', 'afluencia_sqrt',
+            'afluencia_ma_7', 'afluencia_ma_30', 'afluencia_std_7',
+            'afluencia_lag_1', 'afluencia_lag_7', 'diferencia_ma_7'
+        ]
+        
+        for afl in afluencias:
+            features_dict = create_features(afl, fecha_base)
+            features_df = pd.DataFrame([features_dict])[feature_columns]
+            features_scaled = scaler.transform(features_df)
+            features_selected = selector.transform(features_scaled)
+            pred = model.predict(features_selected)[0]
+            predicciones.append(pred)
+        
+        # Crear DataFrame para el gráfico
+        df_sensibilidad = pd.DataFrame({
+            'Afluencia': afluencias,
+            'Ventas_Predichas': predicciones
+        })
+        
+        # Gráfico de línea
+        fig_sens = px.line(
+            df_sensibilidad, 
+            x='Afluencia', 
+            y='Ventas_Predichas',
+            title='Sensibilidad de Ventas vs Afluencia',
+            labels={'Afluencia': 'Afluencia de Visitantes', 'Ventas_Predichas': 'Ventas Predichas ($)'}
+        )
+        
+        fig_sens.add_vline(
+            x=afluencia_base, 
+            line_dash="dash", 
+            line_color="red",
+            annotation_text=f"Afluencia actual: {afluencia_base:,}"
+        )
+        
+        st.plotly_chart(fig_sens, use_container_width=True)
+        
+    except Exception as e:
+        st.error(f"Error en análisis de sensibilidad: {e}")
 
 # Footer
 st.markdown("---")
@@ -295,3 +319,14 @@ st.markdown("""
 
 # Conexión opcional a base de datos
 st.sidebar.info("💡 Aplicación funcionando sin base de datos")
+
+# Debug info (opcional - puedes comentar esta sección en producción)
+if st.sidebar.checkbox("Mostrar información de debug"):
+    st.sidebar.write("**Características esperadas por el modelo:**")
+    feature_columns = [
+        'afluencia', 'mes', 'dia_semana', 'trimestre', 'es_fin_semana',
+        'es_inicio_mes', 'es_fin_mes', 'afluencia_log', 'afluencia_sqrt',
+        'afluencia_ma_7', 'afluencia_ma_30', 'afluencia_std_7',
+        'afluencia_lag_1', 'afluencia_lag_7', 'diferencia_ma_7'
+    ]
+    st.sidebar.text("\n".join(feature_columns))
