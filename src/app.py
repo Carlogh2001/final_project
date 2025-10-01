@@ -10,7 +10,6 @@ import numpy as np
 from datetime import datetime, date
 import plotly.express as px
 import plotly.graph_objects as go
-from utils import db_connect
 
 # Configuración de la página
 st.set_page_config(
@@ -169,13 +168,10 @@ if hasattr(st.session_state, 'prediccion'):
         # Categorización de la predicción
         if st.session_state.prediccion > 50000:
             categoria = "🟢 Alta"
-            color = "green"
         elif st.session_state.prediccion > 25000:
             categoria = "🟡 Media"
-            color = "orange"
         else:
             categoria = "🔴 Baja"
-            color = "red"
         
         st.markdown(f"**Categoría de ventas:** {categoria}")
     
@@ -298,10 +294,16 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Conexión a base de datos (si es necesaria)
+# Conexión opcional a base de datos
 try:
+    from utils import db_connect
     engine = db_connect()
     if engine:
         st.sidebar.success("🔗 Conectado a base de datos")
-except:
-    st.sidebar.warning("⚠️ Sin conexión a base de datos")
+    else:
+        st.sidebar.info("💡 Ejecutándose sin base de datos")
+except ImportError:
+    st.sidebar.info("💡 Ejecutándose sin conexión a base de datos")
+except Exception as e:
+    st.sidebar.warning(f"⚠️ Error de conexión: {str(e)}")
+    
