@@ -1,0 +1,36 @@
+{
+    "modelo": "XGBoost Optimizado",
+    "r2_score": 0.4885289328478768,
+    "mse": 687497714.1332484,
+    "mae": 18818.812951179138,
+    "mape": 76.75464722075003,
+    "fecha_entrenamiento": "2025-09-30 18:29:55",
+    "caracteristicas_seleccionadas": [
+        "afluencia",
+        "dia_semana",
+        "trimestre",
+        "es_fin_semana",
+        "es_fin_mes",
+        "afluencia_log",
+        "afluencia_sqrt",
+        "afluencia_ma_7",
+        "afluencia_lag_1",
+        "diferencia_ma_7"
+    ],
+    "parametros_modelo": {
+        "n_estimators": 300,
+        "max_depth": 5,
+        "learning_rate": 0.1,
+        "subsample": 0.9,
+        "colsample_bytree": 0.9,
+        "reg_alpha": 0.1,
+        "reg_lambda": 1.0,
+        "random_state": 42
+    },
+    "datos_entrenamiento": {
+        "total_muestras": 1343,
+        "muestras_entrenamiento": 1074,
+        "muestras_prueba": 269,
+        "caracteristicas_usadas": 10
+    }
+}
