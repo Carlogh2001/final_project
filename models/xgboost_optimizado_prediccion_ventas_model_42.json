@@ -4,7 +4,7 @@
     "mse": 687497714.1332484,
     "mae": 18818.812951179138,
     "mape": 76.75464722075003,
-    "fecha_entrenamiento": "2025-09-30 18:29:55",
+    "fecha_entrenamiento": "2025-10-01 19:44:18",
     "caracteristicas_seleccionadas": [
         "afluencia",
         "dia_semana",
