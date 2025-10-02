@@ -1,12 +1,12 @@
 # your code here
 import streamlit as st
 import pickle
-import joblib
 import pandas as pd
 import numpy as np
 from datetime import datetime, date
 import plotly.express as px
 import plotly.graph_objects as go
+import os
 
 # Configuración de la página
 st.set_page_config(
@@ -16,25 +16,55 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Función para cargar el modelo
+# Función para cargar el modelo con rutas flexibles
 @st.cache_resource
 def load_model():
     try:
-        # Cargar modelo
-        with open('../models/xgboost_optimizado_prediccion_ventas_model_42.pkl', 'rb') as file:
+        # Detectar si estamos en Streamlit Cloud o local
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        # Posibles rutas para los modelos
+        possible_paths = [
+            os.path.join(current_dir, '..', 'models'),  # Local: src/../models
+            os.path.join(os.getcwd(), 'models'),        # Cloud: ./models
+            'models',                                    # Directa
+            '../models'                                  # Relativa
+        ]
+        
+        model_file = 'xgboost_optimizado_prediccion_ventas_model_42.pkl'
+        scaler_file = 'scaler_xgboost_model_42.pkl'
+        selector_file = 'selector_xgboost_model_42.pkl'
+        
+        models_path = None
+        
+        # Buscar la ruta correcta
+        for path in possible_paths:
+            if os.path.exists(os.path.join(path, model_file)):
+                models_path = path
+                break
+        
+        if models_path is None:
+            st.error("No se encontró la carpeta models. Estructura actual:")
+            st.error(f"Directorio actual: {os.getcwd()}")
+            st.error(f"Contenido: {os.listdir('.')}")
+            return None, None, None
+        
+        # Cargar archivos
+        with open(os.path.join(models_path, model_file), 'rb') as file:
             model = pickle.load(file)
         
-        # Cargar escalador
-        with open('../models/scaler_xgboost_model_42.pkl', 'rb') as file:
+        with open(os.path.join(models_path, scaler_file), 'rb') as file:
             scaler = pickle.load(file)
         
-        # Cargar selector
-        with open('../models/selector_xgboost_model_42.pkl', 'rb') as file:
+        with open(os.path.join(models_path, selector_file), 'rb') as file:
             selector = pickle.load(file)
         
         return model, scaler, selector
+        
     except Exception as e:
         st.error(f"Error cargando el modelo: {e}")
+        st.error(f"Directorio de trabajo: {os.getcwd()}")
+        st.error(f"Archivos disponibles: {os.listdir('.')}")
         return None, None, None
 
 # Función para crear características (ajustada para coincidir con el entrenamiento)
@@ -118,9 +148,6 @@ if st.sidebar.button("🚀 Realizar Predicción", type="primary"):
         
         # Convertir a DataFrame con el orden correcto
         features_df = pd.DataFrame([features_dict])[feature_columns]
-        
-        # Verificar que todas las columnas estén presentes
-        st.sidebar.write(f"Características generadas: {list(features_df.columns)}")
         
         # Aplicar escalado
         features_scaled = scaler.transform(features_df)
@@ -309,16 +336,12 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Conexión opcional a base de datos
-st.sidebar.info("💡 Aplicación funcionando sin base de datos")
+# Información de debug
+st.sidebar.info("💡 Aplicación funcionando correctamente")
 
-# Debug info (opcional - puedes comentar esta sección en producción)
-if st.sidebar.checkbox("Mostrar información de debug"):
-    st.sidebar.write("**Características esperadas por el modelo:**")
-    feature_columns = [
-        'afluencia', 'mes', 'dia_semana', 'trimestre', 'es_fin_semana',
-        'es_inicio_mes', 'es_fin_mes', 'afluencia_log', 'afluencia_sqrt',
-        'afluencia_ma_7', 'afluencia_ma_30', 'afluencia_std_7',
-        'afluencia_lag_1', 'afluencia_lag_7', 'diferencia_ma_7'
-    ]
-    st.sidebar.text("\n".join(feature_columns))
+# Debug info para desarrollo
+if st.sidebar.checkbox("Mostrar información técnica"):
+    st.sidebar.write(f"**Directorio actual:** {os.getcwd()}")
+    st.sidebar.write(f"**Archivos disponibles:** {os.listdir('.')}")
+    if os.path.exists('models'):
+        st.sidebar.write(f"**Modelos encontrados:** {os.listdir('models')}")
